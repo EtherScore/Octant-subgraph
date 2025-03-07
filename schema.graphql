@@ -1,0 +1,124 @@
+type OctantEvent @entity(immutable: true, timeseries: true) {
+  " id for timeseries and aggregation "
+  id: Int8!
+
+  " Type of the current event : 0 for Lock, 1 for Unlock "
+  type: Int8!
+
+  " Total Deposit amount before this event "
+  depositBeforeLock: BigInt # uint256
+
+  " Current deposit amount "
+  amountLock: BigInt! # uint256
+
+  " Date of the current deposit "
+  whenLock: BigInt # uint256
+
+  " User entity that made the current deposit "
+  user: User!
+
+  " Total Deposit amount before this event "
+  depositBeforeUnlock: BigInt # uint256
+
+  " Current withdraw amount "
+  amountUnlock: BigInt! # uint256
+
+  " Date of the current withdraw "
+  whenUnlock: BigInt # uint256
+
+  " Block number of this event "
+  blockNumber: BigInt!
+
+  " Timestamp of this block "
+  blockTimestamp: BigInt!
+
+  " Transaction hash of the transaction that emitted this event "
+  transactionHash: Bytes!
+
+  " Timestamp for aggregation "
+  timestamp: Timestamp!
+
+  isLock: Int8!
+
+  isUnlock: Int8!
+}
+
+type User @entity {
+  " User address "
+  id: Bytes!
+
+  " Current Locked Balance of this user "
+  balanceLocked: BigInt!
+
+  " Flag to determine if the current balance of the user is positive"
+  isBalancePositive: Int8
+
+  " Total locked amount since the first deposit " 
+  totalLockedAmount: BigInt!
+
+  " Total unlocked amount since the first withdraw "
+  totalUnlockedAmount: BigInt!
+
+  " All Octant events stored in an array "
+  OctantEvents: [OctantEvent!]! @derivedFrom(field: "user")
+}
+
+type CumulativeDailyStat @entity {
+  id: Bytes!
+
+  date: String!
+  timestamp: BigInt!
+  isAdded: Boolean!
+  CurrentIndex: BigInt!
+
+  CumulativeDepositsCount: BigInt!
+
+  CumulativeWithdrawalsCount: BigInt!
+
+  " Counter on total deposited amount to the selected timestamp "
+  CumulativeDepositAmount: BigInt!
+
+  " Counter on total withdrawed amount to the selected timestamp "
+  CumulativeWithdrawAmount: BigInt!
+
+  " Counter on current number of staked GLM "
+  CurrentTotalGLMStaked: BigInt!
+
+  " Counter on number of users having staked GLM "
+  TotalUsers: BigInt!
+
+  " Counter on current number of users staking GLM "
+  CurrentTotalUsers: BigInt!
+
+  " Average Daily Deposit count to the selected timestamp "
+  AverageDailyDeposits: BigDecimal!
+
+  " Average Daily GLM Deposit amount to the selected timestamp "
+  AverageDailyGLMDeposits: BigDecimal!
+
+  " Average Daily Withdraw count to the selected timestamp "
+  AverageDailyWithdrawals: BigDecimal!
+
+  " Average Daily GLM Withdraw amount to the selected timestamp "
+  AverageDailyGLMWithdrawals: BigDecimal!
+
+  " Average Daily Users count to the selected timestamp "
+  AverageDailyUsers: BigDecimal!
+}
+
+type DailyMetrics @aggregation(intervals: ["hour", "day"], source: "OctantEvent") {
+  id: Int8!
+  timestamp: Timestamp!
+
+  " Number of deposits for the selected interval "
+  DailyDepositCount: BigInt! @aggregate(fn: "sum", arg: "isLock")
+
+  " Amount of deposited GLM for the selected interval "
+  DailyDepositAmount: BigInt! @aggregate(fn: "sum", arg: "amountLock")
+
+  " Number of withdraw for the selected interval "
+  DailyWithdrawCount: BigInt! @aggregate(fn: "sum", arg: "isUnlock")
+  
+  " Amount of withdrawed GLM for the selected interval "
+  DailyWithdrawAmount: BigInt! @aggregate(fn: "sum", arg: "amountUnlock")
+}
